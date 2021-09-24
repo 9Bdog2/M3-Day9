@@ -14,9 +14,24 @@
     .navbar {
       background-color: #131921;
     }
+
+    #loader .overlay {
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      height: 100vh;
+      width: 100vw;
+      background-color: #000000c2
+    }
+
+    #loader .spinner-grow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+    }
   </style>
   
-  <title>Homework Shop</title>
+  <title>Amazon</title>
 </head>
 
 <body>
@@ -62,10 +77,15 @@
           Reset
         </button>
         <button type="submit" class="btn btn-warning mr-2 w-25">Save</button>
-        <button type="submit" class="btn btn-danger mr-2 w-25">Delete</button>
-        <button type="submit" class="btn btn-info mr-2 w-25">Update</button>
       </div>
     </form>
+  </div>
+
+  <div id="loader">
+    <div class="overlay"></div>
+    <div class="spinner-grow text-warning" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
@@ -77,6 +97,10 @@
   <script src="https://unpkg.com/ionicons@5.4.0/dist/ionicons.js"></script>
 
   <script>
+
+    const params = new URLSearchParams(location.search)
+    const id = params.get('id')
+
     const BASE_URL = "https://striveschool-api.herokuapp.com/api/product/";
     const headers = new Headers({
       "Content-Type": "application/json",
@@ -84,10 +108,14 @@
         "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2MTRiMWRlMDRiYjUzZDAwMTViMTllZDEiLCJpYXQiOjE2MzIzMTI4MDAsImV4cCI6MTYzMzUyMjQwMH0.ZEiTPl6hBe2UEm5T239Bdd_a6OldaCdb8ShgjSK-vsI",
     });
 
+    const method = id ? "PUT" : "POST"
+
     const postProduct = (product, callback) => {
-      fetch(BASE_URL, {
+      const endpoint = id ? BASE_URL + id : BASE_URL
+
+      fetch(endpoint, {
         headers,
-        method: "POST",
+        method,
         body: JSON.stringify(product),
       })
         .then((res) => res.json())
@@ -113,9 +141,63 @@
       });
     };
 
+    async function getProductDetails(id) {
+      setLoading(true)
+      try {
+        const response = await fetch(BASE_URL + id, {
+          headers
+        })
+        const product = await response.json()
+
+        console.log(product)
+        console.log(Object.keys(product))
+
+        Object.keys(product).forEach(key => {
+          const field = document.querySelector(`#${key}`)
+          if (field) field.value = product[key]
+        })
+      } catch (error) {
+        alert(error.message)
+      }
+
+      setLoading(false)
+    }
+
+    async function deleteProduct() {
+      setLoading(true)
+      try {
+        const response = await fetch(BASE_URL + id, { method: 'DELETE', headers })
+
+        if (!response.ok) throw new Error("Failed to delete product")
+
+        alert("All good - product deleted successfully.")
+        location.assign("index.html")
+      } catch (error) {
+        alert(error.message)
+      }
+      setLoading(false)
+    }
+
+    const loader = document.getElementById("loader")
+
+    function setLoading(loading) {
+      if (loading) {
+        loader.classList.remove("d-none")
+      } else {
+        loader.classList.add("d-none")
+      }
+    }
+
     window.onload = function () {
       const form = document.querySelector("form");
       form.onsubmit = formOnSubmit;
+
+      if (id) {
+        document.querySelector("#page-title").innerHTML = "Edit product"
+        document.querySelector("#delete-btn").classList.remove("d-none")
+        getProductDetails(id)
+      }
+
     };
   </script>
   
